@@ -20,15 +20,20 @@ while True:
     # グレースケールに変換
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
+    # 最初のフレームを基準フレームとして設定
     if avg is None:
         avg = gray.copy().astype("float")
         continue
 
-    #現在のフレームとの差分を計算
+    # 現在のフレームとの差分を計算
     cv2.accumulateWeighted(gray, avg, 0.6)  # 移動平均
     frameDelta = cv2.absdiff(gray, cv2.convertScaleAbs(avg))  # 差分
 
-    cv2.imshow("Frame Delta", frameDelta)
+    # 差分画像に閾値処理を適用
+    thresh = cv2.threshold(frameDelta, 40, 255, cv2.THRESH_BINARY)[1]
+
+    # 閾値処理後の画像を表示
+    cv2.imshow("Threshold Frame", thresh)
 
     # ESCキーで終了
     if cv2.waitKey(1) & 0xFF == 27:

@@ -3,42 +3,36 @@ import cv2
 # カメラを初期化
 cap = cv2.VideoCapture("/dev/video0", cv2.CAP_V4L2)
 
-if not cap.isOpened():
-    print("カメラを開けませんでした。デバイスを確認してください。")
-    exit()
-
-# 平均フレーム（基準フレーム）を初期化
 avg = None
 
 while True:
-    # フレームを取得
+    # 1フレームずつ取得する。
     ret, frame = cap.read()
     if not ret:
-        print("フレームを取得できませんでした。")
         break
 
     # グレースケールに変換
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-    # 最初のフレームを基準フレームとして設定
+    # 比較用のフレームを取得する
     if avg is None:
         avg = gray.copy().astype("float")
         continue
 
-    # 現在のフレームとの差分を計算
-    cv2.accumulateWeighted(gray, avg, 0.6)  # 移動平均
-    frameDelta = cv2.absdiff(gray, cv2.convertScaleAbs(avg))  # 差分
+    # 現在のフレームと移動平均との差を計算
+    cv2.accumulateWeighted(gray, avg, 0.6)
+    frameDelta = cv2.absdiff(gray, cv2.convertScaleAbs(avg))
 
-    # 差分画像に閾値処理を適用
-    thresh = cv2.threshold(frameDelta, 40, 255, cv2.THRESH_BINARY)[1]
+    # デルタ画像を閾値処理を行う
+    thresh = cv2.threshold(frameDelta, 3, 255, cv2.THRESH_BINARY)[1]
+    # 画像の閾値に輪郭線を入れる
+    contours, hierarchy = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    frame = cv2.drawContours(frame, contours, -1, (0, 255, 0), 3)
 
-    # 閾値処理後の画像を表示
-    cv2.imshow("Threshold Frame", thresh)
-
-    # ESCキーで終了
-    if cv2.waitKey(1) & 0xFF == 27:
+    # 結果を出力
+    cv2.imshow("Frame", frame)
+    key = cv2.waitKey(30)
+    if key == 27:
         break
 
-# リソースを解放
 cap.release()
 cv2.destroyAllWindows()
